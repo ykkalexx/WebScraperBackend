@@ -7,6 +7,7 @@ CREATE TABLE scraped_data (
     title TEXT,
     price TEXT,
     description TEXT,
+    results TEXT,
     scraped_at TIMESTAMP DEFAULT NOW()
 );
 
