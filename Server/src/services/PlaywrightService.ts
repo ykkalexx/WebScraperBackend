@@ -14,6 +14,14 @@ export class PlaywrightService {
     userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
   };
 
+  private scrapingStatus: Record<
+    string,
+    {
+      status: "pending" | "completed" | "failed";
+      result?: ScrapedResult | ScrapedResult[];
+    }
+  > = {};
+
   // Function used to initialize the playwright browser
   private async initBrowser(): Promise<Browser> {
     if (!this.browser) {
@@ -27,7 +35,7 @@ export class PlaywrightService {
 
   // This is the function that is called per page to scrape the data
   //prettier-ignore
-  private async scrapePageData(page: Page,selectors: Record<string, string>): Promise<any> {
+  private async scrapePageData(page: Page, selectors: Record<string, string>): Promise<any> {
     const data: Record<string, string | null> = {};
 
     for (const [key, selector] of Object.entries(selectors)) {
@@ -43,7 +51,7 @@ export class PlaywrightService {
 
   // This function is used so that if something fails, it has a couple of retries before it gives up
   //prettier-ignore
-  private async retryOperation<T>(operation: () => Promise<T>,retryAttempts: number): Promise<T> {
+  private async retryOperation<T>(operation: () => Promise<T>, retryAttempts: number): Promise<T> {
     let lastError;
     for (let attempt = 0; attempt < retryAttempts; attempt++) {
       try {
@@ -61,6 +69,8 @@ export class PlaywrightService {
   public async launchScrapper(url: string, item: string, selectors: Record<string, string>, options: ScrapingOptions = {}): Promise<ScrapedResult> {
     const mergedOptions = { ...this.defaultOptions, ...options };
     const results: any[] = [];
+    const jobId = `single-${Date.now()}`;
+    this.scrapingStatus[jobId] = { status: "pending" };
 
     try {
       const browser = await this.initBrowser();
@@ -76,7 +86,7 @@ export class PlaywrightService {
 
       while (hasNextPage && currentPage <= mergedOptions.maxPages!) {
         await this.retryOperation(async () => {
-          const pageData = this.scrapePageData(page, selectors);
+          const pageData = await this.scrapePageData(page, selectors); 
           results.push(pageData);
 
           // wait before next action so the pages wont throw a tantrum
@@ -94,6 +104,15 @@ export class PlaywrightService {
         currentPage++;
       }
 
+      this.scrapingStatus[jobId] = {
+        status: "completed",
+        result: {
+          data: results,
+          totalPages: currentPage - 1,
+          success: true,
+        },
+      };
+
       await context.close();
 
       return {
@@ -103,6 +122,10 @@ export class PlaywrightService {
       };
     } catch (error: any) {
       console.error("Scraping error:", error);
+      this.scrapingStatus[jobId] = {
+        status: "failed",
+        result: { data: [], totalPages: 0, success: false, error: error.message },
+      };
       return {
         data: [],
         totalPages: 0,
@@ -119,8 +142,10 @@ export class PlaywrightService {
 
   // Function will be used for bulk scraping and concurrency
   //prettier-ignore
-  public async launchBulkScrapper(urls: string[],item: string,selectors: Record<string, string>,options: ScrapingOptions = {}): Promise<ScrapedResult[]> {
+  public async launchBulkScrapper(urls: string[], item: string, selectors: Record<string, string>, options: ScrapingOptions = {}): Promise<ScrapedResult[]> {
     const mergedOptions = { ...this.defaultOptions, ...options };
+    const jobId = `bulk-${Date.now()}`; // Unique job ID for bulk scraping
+    this.scrapingStatus[jobId] = { status: "pending" };
 
     //using redis for cache for all urls first
     const cachedResults: ScrapedResult[] = [];
@@ -140,7 +165,7 @@ export class PlaywrightService {
       try {
         const result = await this.launchScrapper(url, item, selectors, options);
 
-        // Cache the result in Redis (expire after 1 hour)
+        // Cache the result in Redis (which expires in 1 hour  after 1 hour)
         if (result.success) {
           await redisClient.set(url, JSON.stringify(result), { EX: 3600 });
         }
@@ -159,7 +184,22 @@ export class PlaywrightService {
 
     const scrapedResults = await Promise.all(scrapingPromises);
 
+    // Update status after all URLs are processed
+    this.scrapingStatus[jobId] = {
+      status: "completed",
+      result: [...cachedResults, ...scrapedResults],
+    };
+
     // Combine cached and scraped results
     return [...cachedResults, ...scrapedResults];
+  }
+
+  //prettier-ignore
+  public async fetchStatus(jobId: string): Promise<{status: "pending" | "completed" | "failed";result?: ScrapedResult | ScrapedResult[];}> {
+    const jobStatus = this.scrapingStatus[jobId];
+    if (!jobStatus) {
+      throw new Error("Job ID not found");
+    }
+    return jobStatus;
   }
 }
