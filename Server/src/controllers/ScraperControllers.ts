@@ -5,6 +5,7 @@ import pool from "../config/database";
 const playwrightService = new PlaywrightService();
 
 export class ScraperControllers {
+  // This controller is used for single website scraping
   async scrapeWebsite(req: Request, res: Response) {
     try {
       const { url, item, selectors, options } = req.body;
@@ -28,8 +29,15 @@ export class ScraperControllers {
         // add to database
         const db = await pool.query(
           `INSERT INTO scraped_data (source_url, title, price, description, results) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-          [url, item, selectors.title, selectors.price, JSON.stringify(result)]
+          [
+            url,
+            item,
+            selectors.title,
+            selectors.price,
+            JSON.stringify(result.data),
+          ]
         );
+
         console.log("Added to Database Succesfully");
       }
 
@@ -40,6 +48,7 @@ export class ScraperControllers {
     }
   }
 
+  // This controller is used to fetch the results from the database
   async getResults(req: Request, res: Response) {
     try {
       const { url } = req.query;
@@ -61,6 +70,7 @@ export class ScraperControllers {
     }
   }
 
+  // This controller is used to fetch the status of the scrapers
   async fetchStatus(req: Request, res: Response) {
     try {
       const { jobId } = req.query;
@@ -94,6 +104,24 @@ export class ScraperControllers {
         selectors,
         options
       );
+
+      // Save each result to the database
+      for (const result of results) {
+        if (result.success) {
+          await pool.query(
+            `INSERT INTO scraped_data (source_url, title, price, description, results) VALUES ($1, $2, $3, $4, $5)`,
+            [
+              result.data[0]?.source_url || urls[0], // Use the first URL if source_url is not available
+              item,
+              selectors.title,
+              selectors.price,
+              JSON.stringify(result.data), // Only save result.data
+            ]
+          );
+        }
+      }
+
+      console.log("All results added to the database successfully");
 
       return res.status(200).json(results);
     } catch (error: any) {
