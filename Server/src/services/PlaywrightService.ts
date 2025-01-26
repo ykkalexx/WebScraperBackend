@@ -2,6 +2,7 @@ import { chromium, Browser, Page } from "playwright";
 import { setTimeout } from "timers/promises";
 import { ScrapingOptions, ScrapedResult } from "../types";
 import redisClient from "../config/redis";
+import pool from "../config/database";
 
 export class PlaywrightService {
   private browser: Browser | null = null;
@@ -21,6 +22,13 @@ export class PlaywrightService {
       result?: ScrapedResult | ScrapedResult[];
     }
   > = {};
+
+  private async getRandomProxy() {
+    const result = await pool.query(
+        `SELECT * FROM proxies WHERE is_active = TRUE ORDER BY RANDOM() LIMIT 1`
+    );
+    return result.rows[0];
+  }
 
   // Function used to initialize the playwright browser
   private async initBrowser(): Promise<Browser> {
@@ -58,6 +66,18 @@ export class PlaywrightService {
         return await operation();
       } catch (error: any) {
         lastError = error;
+
+        // If the error is due to a proxy failure, mark the proxy as inactive
+        if (error.message.includes("proxy")) {
+          const proxy = await getRandomProxy();
+          if (proxy) {
+            await pool.query(
+                `UPDATE proxies SET is_active = FALSE WHERE id = $1`,
+                [proxy.id]
+            );
+          }
+        }
+
         await setTimeout(1000 * Math.pow(2, attempt));
       }
     }
@@ -73,7 +93,22 @@ export class PlaywrightService {
     this.scrapingStatus[jobId] = { status: "pending" };
 
     try {
-      const browser = await this.initBrowser();
+      // Fetch a random proxy
+      const proxy = await this.getRandomProxy();
+      if (!proxy) {
+        throw new Error("No active proxies available");
+      }
+
+      // Configure the browser with the proxy
+      const browser = await chromium.launch({
+        headless: true,
+        proxy: {
+          server: `${proxy.ip}:${proxy.port}`,
+          username: proxy.username,
+          password: proxy.password,
+        },
+      });
+
       const context = await browser.newContext({
         userAgent: mergedOptions.userAgent,
       });
