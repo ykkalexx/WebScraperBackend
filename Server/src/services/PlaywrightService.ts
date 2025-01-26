@@ -1,6 +1,7 @@
 import { chromium, Browser, Page } from "playwright";
 import { setTimeout } from "timers/promises";
 import { ScrapingOptions, ScrapedResult } from "../types";
+import redisClient from "../config/redis";
 
 export class PlaywrightService {
   private browser: Browser | null = null;
@@ -24,11 +25,9 @@ export class PlaywrightService {
     return this.browser;
   }
 
-  // Function to add the scraper to the scheduled jobs (will use Redis and Parallel)
-
   // This is the function that goes through the page and scrapes the data
   //prettier-ignore
-  private async scrapePageData(page: Page,selectors: Record<string, string> ): Promise<any> {
+  private async scrapePageData(page: Page,selectors: Record<string, string>): Promise<any> {
     const data: Record<string, string | null> = {};
 
     for (const [key, selector] of Object.entries(selectors)) {
@@ -44,7 +43,7 @@ export class PlaywrightService {
 
   // This function is used so that if something fails, it has a couple of retries before it gives up
   //prettier-ignore
-  private async retryOperation<T>(operation: () => Promise<T>,retryAttempts: number ): Promise<T> {
+  private async retryOperation<T>(operation: () => Promise<T>,retryAttempts: number): Promise<T> {
     let lastError;
     for (let attempt = 0; attempt < retryAttempts; attempt++) {
       try {
@@ -59,7 +58,7 @@ export class PlaywrightService {
 
   // The function where the magic happens meow :3
   //prettier-ignore
-  public async launchScrapper(  url: string, item: string, selectors: Record<string, string>, options: ScrapingOptions = {} ): Promise<ScrapedResult> {
+  public async launchScrapper(url: string, item: string, selectors: Record<string, string>, options: ScrapingOptions = {}): Promise<ScrapedResult> {
     const mergedOptions = { ...this.defaultOptions, ...options };
     const results: any[] = [];
 
@@ -116,5 +115,51 @@ export class PlaywrightService {
         this.browser = null;
       }
     }
+  }
+
+  // Function will be used for bulk scraping and concurrency
+  //prettier-ignore
+  public async launchBulkScrapper(urls: string[],item: string,selectors: Record<string, string>,options: ScrapingOptions = {}): Promise<ScrapedResult[]> {
+    const mergedOptions = { ...this.defaultOptions, ...options };
+
+    //using redis for cache for all urls first
+    const cachedResults: ScrapedResult[] = [];
+    const uncachedUrls: string[] = [];
+
+    for (const url of urls) {
+      const cachedData = await redisClient.get(url);
+      if (cachedData) {
+        cachedResults.push(JSON.parse(cachedData));
+      } else {
+        uncachedUrls.push(url);
+      }
+    }
+
+    // Scrape uncached URLs in parallel
+    const scrapingPromises = uncachedUrls.map(async (url) => {
+      try {
+        const result = await this.launchScrapper(url, item, selectors, options);
+
+        // Cache the result in Redis (expire after 1 hour)
+        if (result.success) {
+          await redisClient.set(url, JSON.stringify(result), { EX: 3600 });
+        }
+
+        return result;
+      } catch (error: any) {
+        console.error(`Scraping error for ${url}:`, error);
+        return {
+          data: [],
+          totalPages: 0,
+          success: false,
+          error: error.message,
+        };
+      }
+    });
+
+    const scrapedResults = await Promise.all(scrapingPromises);
+
+    // Combine cached and scraped results
+    return [...cachedResults, ...scrapedResults];
   }
 }
