@@ -1,6 +1,7 @@
 import axios from "axios";
 import cheerio from "cheerio";
 import pool from "../config/database";
+import {chromium} from "playwright";
 
 // Function used to fetch free proxies from https://free-proxy-list.net
 async function fetchProxies() {
@@ -25,6 +26,30 @@ async function fetchProxies() {
         return []
     }
 }
+
+async function checkProxyHealth(proxy: any) {
+    try {
+        const browser = await chromium.launch({
+            proxy: {
+                server: `${proxy.ip}:${proxy.port}`,
+                username: proxy.username,
+                password: proxy.password,
+            },
+        });
+        await browser.close();
+        await pool.query(`UPDATE proxies SET is_active = TRUE WHERE id = $1`, [proxy.id]);
+    } catch (error) {
+        await pool.query(`UPDATE proxies SET is_active = FALSE WHERE id = $1`, [proxy.id]);
+    }
+}
+
+// run health checks periodically on the proxes and update them
+setInterval(async () => {
+    const proxies = await pool.query(`SELECT * FROM proxies`);
+    for (const proxy of proxies.rows) {
+        await checkProxyHealth(proxy);
+    }
+}, 3600000); // check every hour
 
 // Add fetched proxies to the database
 async function addProxiesToDatabase() {

@@ -35,10 +35,10 @@ CREATE TABLE scraping_cache (
 
 -- Table to store proxies for proxy rotation to avoid IP Bans
 CREATE TABLE proxies (
-                         id SERIAL PRIMARY KEY,
-                         ip TEXT NOT NULL,
-                         port TEXT NOT NULL,
-                         username TEXT,
-                         password TEXT,
-                         is_active BOOLEAN DEFAULT TRUE
+    id SERIAL PRIMARY KEY,
+    ip TEXT NOT NULL,
+    port TEXT NOT NULL,
+    username TEXT,
+    password TEXT,
+    is_active BOOLEAN DEFAULT TRUE
 );
