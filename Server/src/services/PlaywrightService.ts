@@ -69,7 +69,7 @@ export class PlaywrightService {
 
         // If the error is due to a proxy failure, mark the proxy as inactive
         if (error.message.includes("proxy")) {
-          const proxy = await getRandomProxy();
+          const proxy = await this.getRandomProxy();
           if (proxy) {
             await pool.query(
                 `UPDATE proxies SET is_active = FALSE WHERE id = $1`,
