@@ -68,4 +68,29 @@ export class ScraperControllers {
       return res.status(500).json({ error: error.message });
     }
   }
+
+  // Bulk website scraping
+  async scrapeBulkWebsites(req: Request, res: Response) {
+    try {
+      const { urls, item, selectors, options } = req.body;
+
+      if (!urls || !item || !selectors) {
+        return res
+          .status(400)
+          .json({ error: "The request is missing something" });
+      }
+
+      const results = await playwrightService.launchBulkScrapper(
+        urls,
+        item,
+        selectors,
+        options
+      );
+
+      return res.status(200).json(results);
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
 }

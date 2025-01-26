@@ -25,7 +25,7 @@ export class PlaywrightService {
     return this.browser;
   }
 
-  // This is the function that goes through the page and scrapes the data
+  // This is the function that is called per page to scrape the data
   //prettier-ignore
   private async scrapePageData(page: Page,selectors: Record<string, string>): Promise<any> {
     const data: Record<string, string | null> = {};
