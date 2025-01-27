@@ -35,8 +35,10 @@ export class PlaywrightService {
   }
 
   // This is the function that is called per page to scrape the data
-  //prettier-ignore
-  private async scrapePageData(page: Page, selectors: Record<string, string>): Promise<any> {
+  private async scrapePageData(
+    page: Page,
+    selectors: Record<string, string>
+  ): Promise<any> {
     const data: Record<string, string | null> = {};
 
     for (const [key, selector] of Object.entries(selectors)) {
@@ -68,8 +70,12 @@ export class PlaywrightService {
   }
 
   // The function where the magic happens meow :3
-  //prettier-ignore
-  public async launchScrapper(url: string, item: string, selectors: Record<string, string>, options: ScrapingOptions = {}): Promise<ScrapedResult> {
+  public async launchScrapper(
+    url: string,
+    item: string,
+    selectors: Record<string, string>,
+    options: ScrapingOptions = {}
+  ): Promise<ScrapedResult> {
     const mergedOptions = { ...this.defaultOptions, ...options };
     const results: any[] = [];
     const jobId = `single-${Date.now()}`;
@@ -89,7 +95,7 @@ export class PlaywrightService {
 
       while (hasNextPage && currentPage <= mergedOptions.maxPages!) {
         await this.retryOperation(async () => {
-          const pageData = await this.scrapePageData(page, selectors); 
+          const pageData = await this.scrapePageData(page, selectors);
           results.push(pageData);
 
           // wait before next action so the pages wont throw a tantrum
@@ -127,7 +133,12 @@ export class PlaywrightService {
       console.error("Scraping error:", error);
       this.scrapingStatus[jobId] = {
         status: "failed",
-        result: { data: [], totalPages: 0, success: false, error: error.message },
+        result: {
+          data: [],
+          totalPages: 0,
+          success: false,
+          error: error.message,
+        },
       };
       return {
         data: [],
@@ -144,8 +155,12 @@ export class PlaywrightService {
   }
 
   // Function will be used for bulk scraping and concurrency
-  //prettier-ignore
-  public async launchBulkScrapper(urls: string[], item: string, selectors: Record<string, string>, options: ScrapingOptions = {}): Promise<ScrapedResult[]> {
+  public async launchBulkScrapper(
+    urls: string[],
+    item: string,
+    selectors: Record<string, string>,
+    options: ScrapingOptions = {}
+  ): Promise<ScrapedResult[]> {
     const mergedOptions = { ...this.defaultOptions, ...options };
     const jobId = `bulk-${Date.now()}`; // Unique job ID for bulk scraping
     this.scrapingStatus[jobId] = { status: "pending" };
@@ -197,7 +212,6 @@ export class PlaywrightService {
     return [...cachedResults, ...scrapedResults];
   }
 
-  //prettier-ignore
   public async fetchStatus(jobId: string): Promise<{
     status: "pending" | "completed" | "failed";
     result?: ScrapedResult | ScrapedResult[];
@@ -209,15 +223,58 @@ export class PlaywrightService {
         `SELECT status, result FROM scraping_jobs WHERE job_id = $1`,
         [jobId]
       );
-      
+
       if (dbResult.rows.length > 0) {
         return {
           status: dbResult.rows[0].status,
-          result: dbResult.rows[0].result
+          result: dbResult.rows[0].result,
         };
       }
       throw new Error("Job ID not found");
     }
     return jobStatus;
+  }
+
+  public async analyzeSeo(url: string): Promise<any> {
+    const browser = await this.initBrowser();
+    const page = await browser.newPage();
+    await page.goto(url);
+
+    const seoData = await page.evaluate(() => {
+      const getMeta = (name: string): string | undefined => {
+        return (
+          (document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement)
+            ?.content ||
+          (
+            document.querySelector(
+              `meta[property="og:${name}"]`
+            ) as HTMLMetaElement
+          )?.content
+        );
+      };
+
+      return {
+        title: document.title,
+        description: getMeta("description"),
+        keywords: getMeta("keywords"),
+        h1: Array.from(document.querySelectorAll("h1")).map(
+          (h) => h.textContent
+        ),
+        h2: Array.from(document.querySelectorAll("h2")).map(
+          (h) => h.textContent
+        ),
+        images: Array.from(document.querySelectorAll("img")).map((img) => ({
+          src: img.src,
+          alt: img.alt,
+        })),
+        links: Array.from(document.querySelectorAll("a")).map((a) => ({
+          href: a.href,
+          text: a.textContent,
+        })),
+      };
+    });
+
+    await browser.close();
+    return seoData;
   }
 }

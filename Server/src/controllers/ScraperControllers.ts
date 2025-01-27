@@ -140,4 +140,20 @@ export class ScraperControllers {
       return res.status(500).json({ error: error.message });
     }
   }
+
+  async scrapeWebsiteSEO(req: Request, res: Response) {
+    try {
+      const { url } = req.body;
+      if (!url) {
+        return res.status(400).json({ error: "URL is missing" });
+      }
+
+      const seoData = await playwrightService.analyzeSeo(url);
+
+      return res.status(200).json(seoData);
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
 }
