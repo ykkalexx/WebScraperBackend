@@ -1,6 +1,6 @@
 ### Endpoints
 
-#### POST : /scape/single
+#### POST : /api/scape/single
 
 - **Input:**
 
@@ -28,26 +28,87 @@
 
 ```json
 {
-  "data": [
-    {
-      "title": "title",
-      "price": "price",
-      "description": "Item Description"
-    }
-  ],
-  "totalPages": 1,
-  "success": true
+  "message": "Scraping job queued",
+  "jobId": "single-123456789"
 }
 ```
 
-#### GET : /data?source=example.com
+#### POST : /api/scape/bulk
+
+- **Input:**
 
 ```json
 {
-  "source": "example.com",
-  "data": [
-    { "title": "Product 1", "price": "$10", "description": "Great product" }
+  "urls": ["https://example.com/page1", "https://example.com/page2"],
+  "item": "product",
+  "selectors": {
+    "title": "h1.product-title",
+    "price": "span.price",
+    "description": "div.product-description"
+  },
+  "options": {
+    "maxPages": 1,
+    "waitTime": 1000,
+    "retryAttempts": 2
+  }
+}
+```
+
+- **Output:**
+
+```json
+{
+  "message": "Bulk scraping jobs queued",
+  "jobIds": ["bulk-123456789", "bulk-123456790"]
+}
+```
+
+#### POST : /api/scrape/seo
+
+```json
+{
+  "url": "https://example.com"
+}
+```
+
+```json
+{
+  "title": "Example Page",
+  "description": "This is an example page",
+  "keywords": "example, test, page",
+  "h1": ["Main Heading"],
+  "h2": ["Sub Heading 1", "Sub Heading 2"],
+  "images": [
+    {
+      "src": "https://example.com/image.jpg",
+      "alt": "Example image"
+    }
+  ],
+  "links": [
+    {
+      "href": "https://example.com/about",
+      "text": "About Us"
+    }
   ]
+}
+```
+
+#### GET : /api/scraper/status?jobId=bulk-123456789
+
+```json
+{
+  "status": "completed",
+  "result": {
+    "data": [
+      {
+        "title": "Product 1",
+        "price": "$19.99",
+        "description": "Great product"
+      }
+    ],
+    "totalPages": 1,
+    "success": true
+  }
 }
 ```
 
