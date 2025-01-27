@@ -13,3 +13,11 @@ export interface ScrapedResult {
   success: boolean;
   error?: string;
 }
+
+export interface Proxy {
+  ip: string;
+  port: string;
+  country?: string;
+  anonymity?: string;
+  https?: boolean;
+}

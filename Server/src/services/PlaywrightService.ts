@@ -23,13 +23,6 @@ export class PlaywrightService {
     }
   > = {};
 
-  private async getRandomProxy() {
-    const result = await pool.query(
-        `SELECT * FROM proxies WHERE is_active = TRUE ORDER BY RANDOM() LIMIT 1`
-    );
-    return result.rows[0];
-  }
-
   // Function used to initialize the playwright browser
   private async initBrowser(): Promise<Browser> {
     if (!this.browser) {
@@ -58,26 +51,16 @@ export class PlaywrightService {
   }
 
   // This function is used so that if something fails, it has a couple of retries before it gives up
-  //prettier-ignore
-  private async retryOperation<T>(operation: () => Promise<T>, retryAttempts: number): Promise<T> {
+  private async retryOperation<T>(
+    operation: () => Promise<T>,
+    retryAttempts: number
+  ): Promise<T> {
     let lastError;
     for (let attempt = 0; attempt < retryAttempts; attempt++) {
       try {
         return await operation();
       } catch (error: any) {
         lastError = error;
-
-        // If the error is due to a proxy failure, mark the proxy as inactive
-        if (error.message.includes("proxy")) {
-          const proxy = await this.getRandomProxy();
-          if (proxy) {
-            await pool.query(
-                `UPDATE proxies SET is_active = FALSE WHERE id = $1`,
-                [proxy.id]
-            );
-          }
-        }
-
         await setTimeout(1000 * Math.pow(2, attempt));
       }
     }
@@ -93,22 +76,7 @@ export class PlaywrightService {
     this.scrapingStatus[jobId] = { status: "pending" };
 
     try {
-      // Fetch a random proxy
-      const proxy = await this.getRandomProxy();
-      if (!proxy) {
-        throw new Error("No active proxies available");
-      }
-
-      // Configure the browser with the proxy
-      const browser = await chromium.launch({
-        headless: true,
-        proxy: {
-          server: `${proxy.ip}:${proxy.port}`,
-          username: proxy.username,
-          password: proxy.password,
-        },
-      });
-
+      const browser = await this.initBrowser();
       const context = await browser.newContext({
         userAgent: mergedOptions.userAgent,
       });
@@ -230,9 +198,24 @@ export class PlaywrightService {
   }
 
   //prettier-ignore
-  public async fetchStatus(jobId: string): Promise<{status: "pending" | "completed" | "failed";result?: ScrapedResult | ScrapedResult[];}> {
+  public async fetchStatus(jobId: string): Promise<{
+    status: "pending" | "completed" | "failed";
+    result?: ScrapedResult | ScrapedResult[];
+  }> {
     const jobStatus = this.scrapingStatus[jobId];
     if (!jobStatus) {
+      // Check database if not found in memory
+      const dbResult = await pool.query(
+        `SELECT status, result FROM scraping_jobs WHERE job_id = $1`,
+        [jobId]
+      );
+      
+      if (dbResult.rows.length > 0) {
+        return {
+          status: dbResult.rows[0].status,
+          result: dbResult.rows[0].result
+        };
+      }
       throw new Error("Job ID not found");
     }
     return jobStatus;

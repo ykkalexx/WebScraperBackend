@@ -18,7 +18,7 @@ CREATE TABLE scraping_jobs (
     job_id TEXT NOT NULL UNIQUE,       -- Unique job ID (e.g., "single-123456789" or "bulk-123456789")
     source_url TEXT NOT NULL,          -- URL(s) being scraped (for bulk, this can be a JSON array)
     selectors JSONB NOT NULL,          -- Selectors used for scraping (stored as JSON)
-    status TEXT NOT NULL,              -- Status of the job: "pending", "completed", "failed"
+    status TEXT NOT NULL DEFAULT 'pending', -- Status of the job: "pending", "completed", "failed"
     result JSONB,                      -- Result of the job (stored as JSON)
     created_at TIMESTAMP DEFAULT NOW(),-- Timestamp of when the job was created
     updated_at TIMESTAMP DEFAULT NOW() -- Timestamp of when the job was last updated
@@ -33,12 +33,3 @@ CREATE TABLE scraping_cache (
     expires_at TIMESTAMP               -- Timestamp of when the cache expires
 );
 
--- Table to store proxies for proxy rotation to avoid IP Bans
-CREATE TABLE proxies (
-    id SERIAL PRIMARY KEY,
-    ip TEXT NOT NULL,
-    port TEXT NOT NULL,
-    username TEXT,
-    password TEXT,
-    is_active BOOLEAN DEFAULT TRUE
-);

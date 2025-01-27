@@ -79,6 +79,17 @@ export class ScraperControllers {
         return res.status(400).json({ error: "Job ID is required" });
       }
 
+      // Check database first
+      const dbResult = await pool.query(
+        `SELECT status, result FROM scraping_jobs WHERE job_id = $1`,
+        [jobId]
+      );
+
+      if (dbResult.rows.length > 0) {
+        return res.status(200).json(dbResult.rows[0]);
+      }
+
+      // If not in database, check in-memory status
       const status = await playwrightService.fetchStatus(jobId as string);
       return res.status(200).json(status);
     } catch (error: any) {
