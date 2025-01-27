@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from "express";
 import { json, urlencoded } from "express";
 import routes from "./routes/index";
 import pool from "./config/database";
+import swaggerSetup from "./config/swagger";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,6 +13,9 @@ app.use(urlencoded({ extended: true }));
 
 // Routes
 app.use("/api", routes);
+
+// Swagger docs
+swaggerSetup(app);
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {

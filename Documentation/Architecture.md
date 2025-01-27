@@ -80,3 +80,7 @@ v v
 
 - Rate limiting to prevent abuse
 - Environment variables for sensitive data
+
+## API Docs:
+
+localhost:3000/api-docs

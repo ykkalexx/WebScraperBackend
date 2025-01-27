@@ -23,6 +23,7 @@ const swaggerSpec = swaggerJsdoc(options);
 
 const swaggerSetup = (app: any) => {
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  console.log("View API Docs at: http://localhost:3000/api-docs");
 };
 
 export default swaggerSetup;

@@ -93,7 +93,7 @@
 }
 ```
 
-#### GET : /api/scraper/status?jobId=bulk-123456789
+#### GET : /api/scrape/status?jobId=bulk-123456789
 
 ```json
 {
@@ -112,7 +112,7 @@
 }
 ```
 
-#### GET : /scrape-status
+#### GET : /scraper/status
 
 ```json
 {
