@@ -212,6 +212,7 @@ export class PlaywrightService {
     return [...cachedResults, ...scrapedResults];
   }
 
+  // This function is used to fetch the status of a job
   public async fetchStatus(jobId: string): Promise<{
     status: "pending" | "completed" | "failed";
     result?: ScrapedResult | ScrapedResult[];
@@ -235,6 +236,7 @@ export class PlaywrightService {
     return jobStatus;
   }
 
+  // This function is used to analyze the SEO of a website
   public async analyzeSeo(url: string): Promise<any> {
     const browser = await this.initBrowser();
     const page = await browser.newPage();
@@ -276,5 +278,35 @@ export class PlaywrightService {
 
     await browser.close();
     return seoData;
+  }
+
+  public async handleQueueResult(
+    url: string,
+    jobId: string,
+    result: ScrapedResult
+  ) {
+    if (result.success) {
+      // Save to database
+      try {
+        await pool.query(
+          `INSERT INTO scraped_data (source_url, title, price, description, results) VALUES ($1, $2, $3, $4, $5)`,
+          [
+            url,
+            result.data[0]?.title,
+            result.data[0]?.price,
+            result.data[0]?.description,
+            JSON.stringify(result.data),
+          ]
+        );
+        console.log("Data saved to database");
+      } catch (error: any) {
+        console.error("Error saving data to database", error);
+      }
+    }
+    // Update job status
+    this.scrapingStatus[jobId] = {
+      status: result.success ? "completed" : "failed",
+      result,
+    };
   }
 }

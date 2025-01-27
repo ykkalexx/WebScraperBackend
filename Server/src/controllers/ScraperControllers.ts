@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { PlaywrightService } from "../services/PlaywrightService";
 import pool from "../config/database";
+import { scrapeQueue } from "../services/QueueService";
 
 const playwrightService = new PlaywrightService();
 
@@ -16,32 +17,18 @@ export class ScraperControllers {
           .json({ error: "The request is missing something" });
       }
 
-      const result = await playwrightService.launchScrapper(
+      // Add job to queue
+      const job = await scrapeQueue.add("scrape", {
         url,
         item,
         selectors,
-        options
-      );
+        options,
+      });
 
-      if (!result.success) {
-        return res.status(500).json({ error: result.error });
-      } else {
-        // add to database
-        const db = await pool.query(
-          `INSERT INTO scraped_data (source_url, title, price, description, results) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-          [
-            url,
-            item,
-            selectors.title,
-            selectors.price,
-            JSON.stringify(result.data),
-          ]
-        );
-
-        console.log("Added to Database Succesfully");
-      }
-
-      return res.status(200).json(result);
+      return res.status(202).json({
+        message: "Scraping job queued",
+        jobId: job.id,
+      });
     } catch (error: any) {
       console.error(error);
       return res.status(500).json({ error: error.message });
@@ -109,32 +96,22 @@ export class ScraperControllers {
           .json({ error: "The request is missing something" });
       }
 
-      const results = await playwrightService.launchBulkScrapper(
-        urls,
-        item,
-        selectors,
-        options
+      // Add multiple jobs to queue
+      const jobs = await Promise.all(
+        urls.map((url: string) =>
+          scrapeQueue.add("bulk-scrape", {
+            url,
+            item,
+            selectors,
+            options,
+          })
+        )
       );
 
-      // Save each result to the database
-      for (const result of results) {
-        if (result.success) {
-          await pool.query(
-            `INSERT INTO scraped_data (source_url, title, price, description, results) VALUES ($1, $2, $3, $4, $5)`,
-            [
-              result.data[0]?.source_url || urls[0], // Use the first URL if source_url is not available
-              item,
-              selectors.title,
-              selectors.price,
-              JSON.stringify(result.data), // Only save result.data
-            ]
-          );
-        }
-      }
-
-      console.log("All results added to the database successfully");
-
-      return res.status(200).json(results);
+      return res.status(202).json({
+        message: "Bulk scraping jobs queued",
+        jobIds: jobs.map((job) => job.id),
+      });
     } catch (error: any) {
       console.error(error);
       return res.status(500).json({ error: error.message });
