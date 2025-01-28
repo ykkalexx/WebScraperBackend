@@ -127,7 +127,7 @@ export class ScraperControllers {
           .json({ error: "The request is missing something" });
       }
 
-      const result = pool.query(
+      const result = await pool.query(
         `SELECT * FROM scraped_data WHERE source_url = $1`,
         [url]
       );
