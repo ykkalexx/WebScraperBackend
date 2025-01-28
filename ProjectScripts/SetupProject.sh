@@ -47,13 +47,12 @@ sudo -u postgres psql -c "CREATE USER user WITH PASSWORD 'password';"
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE web_scraper TO user;"
 
 # Start Redis
-sudo systemctl enable redis-server
-sudo systemctl start redis-server
+brew install redis
+brew services start redis
 
 # Create database schema
 psql -U user -d web_scraper -f src/schemas/migration_001.sql
 
 # Set permissions
-chmod +x ../ProjectScripts/SetupProject.sh
 
 echo "Setup complete! Run 'npm run dev' to start the server."
