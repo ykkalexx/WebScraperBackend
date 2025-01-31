@@ -26,4 +26,22 @@ class WebSocketService {
       });
     });
   }
+
+  public notifyJobComplete(jobId: string, result: any) {
+    this.io.to(`job-${jobId}`).emit("jobComplete", {
+      jobId,
+      status: "Completed",
+      result,
+    });
+  }
+
+  public notifyJobFailed(jobId: string, error: string) {
+    this.io.to(`job-${jobId}`).emit("jobFailed", {
+      jobId,
+      status: "failed",
+      error,
+    });
+  }
 }
+
+export default WebSocketService;
