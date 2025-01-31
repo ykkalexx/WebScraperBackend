@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@types/joi": "^17.2.3",
     "@types/pg": "^8.11.11",
     "@types/redis": "^4.0.11",
     "@types/swagger-jsdoc": "^6.0.4",
@@ -21,6 +22,7 @@
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "express-rate-limit": "^7.5.0",
+    "joi": "^17.13.3",
     "pg": "^8.7.1",
     "playwright": "^1.50.0",
     "redis": "^4.7.0",
