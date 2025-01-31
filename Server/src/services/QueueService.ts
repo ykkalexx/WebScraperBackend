@@ -1,6 +1,7 @@
 import { Worker, Queue } from "bullmq";
 import { PlaywrightService } from "./PlaywrightService";
 import pool from "../config/database";
+import { websocketService } from "../app";
 
 const playwrightService = new PlaywrightService();
 
@@ -36,7 +37,18 @@ new Worker(
           JSON.stringify(result),
         ]
       );
-    } catch (error) {
+
+      //  websocket notification
+      if (result.success) {
+        websocketService.notifyJobComplete(job.id!, result);
+      } else {
+        websocketService.notifyJobFailed(
+          job.id!,
+          result.error || "Unknown error"
+        );
+      }
+    } catch (error: any) {
+      websocketService.notifyJobFailed(job.id!, error.message);
       console.error("Error saving job status to database", error);
     }
 

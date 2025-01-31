@@ -3,9 +3,15 @@ import { json, urlencoded } from "express";
 import routes from "./routes/index";
 import pool from "./config/database";
 import swaggerSetup from "./config/swagger";
+import WebSocketService from "./services/WebsocketsService";
+import { createServer } from "http";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const httpServer = createServer(app);
+
+// init websocket
+export const websocketService = new WebSocketService(httpServer);
 
 // Middleware
 app.use(json());
@@ -30,8 +36,10 @@ pool
     client.release();
     console.log("Connected to PostgreSQL database");
 
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`Server is running on http://localhost:${PORT}`);
+      console.log(`WebSocket server is running on ws://localhost:${PORT}`);
+      console.log(`Swagger docs: http://localhost:${PORT}/api-docs`);
     });
   })
   .catch((err) => {
