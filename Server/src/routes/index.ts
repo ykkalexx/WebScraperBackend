@@ -20,7 +20,7 @@ router.post(
   validateRequest(bulkScrapeSchema),
   scraper.scrapeBulkWebsites
 );
-router.get("/scraper/status", scraper.fetchStatus);
+router.get("/scrape/status", scraper.fetchStatus);
 router.post("/scrape/seo", scraper.scrapeWebsiteSEO);
-router.get("/data", validateRequest(seoSchema), scraper.getResults);
+router.post("/data", validateRequest(seoSchema), scraper.getResults);
 export default router;

@@ -22,7 +22,7 @@ export class ScraperControllers {
    *             properties:
    *               url:
    *                 type: string
-   *                 example: "https://example.com"
+   *                 example: "https://www.newegg.com/p/pl?d=iphone"
    *               item:
    *                 type: string
    *                 example: "product"
@@ -31,10 +31,10 @@ export class ScraperControllers {
    *                 properties:
    *                   title:
    *                     type: string
-   *                     example: "h1.product-title"
+   *                     example: "span.item-open-box-italic"
    *                   price:
    *                     type: string
-   *                     example: "span.price"
+   *                     example: "span.price-current-label"
    *               options:
    *                 type: object
    *                 properties:
@@ -93,16 +93,19 @@ export class ScraperControllers {
   /**
    * @swagger
    * /api/data:
-   *   get:
+   *   post:
    *     summary: Get scraped results by URL
    *     tags: [Scraper]
-   *     parameters:
-   *       - in: query
-   *         name: url
-   *         required: true
-   *         schema:
-   *           type: string
-   *         example: "https://example.com"
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               url:
+   *                 type: string
+   *                 example: "https://www.newegg.com/p/pl?d=iphone"
    *     responses:
    *       200:
    *         description: Scraped results
@@ -120,7 +123,7 @@ export class ScraperControllers {
    */
   async getResults(req: Request, res: Response) {
     try {
-      const { url } = req.query;
+      const { url } = req.body;
       if (!url) {
         return res
           .status(400)
@@ -152,7 +155,7 @@ export class ScraperControllers {
    *         required: true
    *         schema:
    *           type: string
-   *         example: "single-123456789"
+   *         example: "15"
    *     responses:
    *       200:
    *         description: Job status
@@ -305,7 +308,7 @@ export class ScraperControllers {
    *             properties:
    *               url:
    *                 type: string
-   *                 example: "https://example.com"
+   *                 example: "https://www.newegg.com/p/pl?d=iphone"
    *     responses:
    *       200:
    *         description: SEO analysis results
