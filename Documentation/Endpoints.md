@@ -1,17 +1,14 @@
 ### Endpoints
 
-#### POST : /api/scape/single
+#### POST : /api/scrape/single
 
 - **Input:**
 
 ```json
 {
-  "url": "url",
-  "item": "item",
-  "selectors": {
-    "title": "span.item-title",
-    "price": "li.price-current",
-    "description": "div.item-info"
+  "url": "https://www.newegg.com/p/pl?d=iphone",
+  "searchTerms": {
+    "title": "iPhone"
   },
   "options": {
     "maxPages": 3,
@@ -29,22 +26,22 @@
 ```json
 {
   "message": "Scraping job queued",
-  "jobId": "single-123456789"
+  "jobId": "21"
 }
 ```
 
-#### POST : /api/scape/bulk
+#### POST : /api/scrape/bulk
 
 - **Input:**
 
 ```json
 {
-  "urls": ["https://example.com/page1", "https://example.com/page2"],
-  "item": "product",
-  "selectors": {
-    "title": "h1.product-title",
-    "price": "span.price",
-    "description": "div.product-description"
+  "urls": [
+    "https://www.newegg.com/p/pl?d=iphone",
+    "https://www.newegg.com/p/pl?d=iphone&page=2"
+  ],
+  "searchTerms": {
+    "title": "iPhone"
   },
   "options": {
     "maxPages": 1,
@@ -59,41 +56,49 @@
 ```json
 {
   "message": "Bulk scraping jobs queued",
-  "jobIds": ["bulk-123456789", "bulk-123456790"]
+  "jobIds": ["1", "2"]
 }
 ```
 
-#### POST : /api/scrape/seo
+#### POST : /api/data
+
+- **Input:**
 
 ```json
 {
-  "url": "https://example.com"
+  "url": "https://www.newegg.com/p/pl?d=iphone"
 }
 ```
+
+- **Output:**
 
 ```json
 {
-  "title": "Example Page",
-  "description": "This is an example page",
-  "keywords": "example, test, page",
-  "h1": ["Main Heading"],
-  "h2": ["Sub Heading 1", "Sub Heading 2"],
-  "images": [
-    {
-      "src": "https://example.com/image.jpg",
-      "alt": "Example image"
-    }
-  ],
-  "links": [
-    {
-      "href": "https://example.com/about",
-      "text": "About Us"
-    }
-  ]
+  "result": {
+    "rows": [
+      {
+        "id": 1,
+        "source_url": "https://www.newegg.com/p/pl?d=iphone",
+        "title": "iPhone 14 Pro Max",
+        "price": "$999.99",
+        "description": "Latest iPhone model with advanced features",
+        "results": [
+          {
+            "title": "iPhone 14 Pro Max",
+            "price": "$999.99",
+            "description": "Latest iPhone model with advanced features"
+          }
+        ],
+        "scraped_at": "2025-02-09T11:23:49.663Z"
+      }
+    ]
+  }
 }
 ```
 
-#### GET : /api/scrape/status?jobId=bulk-123456789
+#### GET : /api/scrape/status?jobId=123456789
+
+- **Output:**
 
 ```json
 {
@@ -101,9 +106,9 @@
   "result": {
     "data": [
       {
-        "title": "Product 1",
-        "price": "$19.99",
-        "description": "Great product"
+        "title": "iPhone 14 Pro Max",
+        "price": "$999.99",
+        "description": "Latest iPhone model with advanced features"
       }
     ],
     "totalPages": 1,
@@ -112,15 +117,35 @@
 }
 ```
 
-#### GET : /scraper/status
+#### POST : /api/scrape/seo
+
+- **Input:**
 
 ```json
 {
-  "jobs": [
+  "url": "https://www.newegg.com/p/pl?d=iphone"
+}
+```
+
+- **Output:**
+
+```json
+{
+  "title": "iPhone Search Results",
+  "description": "Shop iPhone products at Newegg",
+  "keywords": "iphone, apple, smartphone",
+  "h1": ["iPhone Products"],
+  "h2": ["Featured Items", "Best Sellers"],
+  "images": [
     {
-      "url": "https://example.com",
-      "status": "completed",
-      "lastRun": "2025-01-20"
+      "src": "https://example.com/iphone.jpg",
+      "alt": "iPhone 14 Pro"
+    }
+  ],
+  "links": [
+    {
+      "href": "https://www.newegg.com/p/123",
+      "text": "iPhone 14 Pro Max"
     }
   ]
 }
