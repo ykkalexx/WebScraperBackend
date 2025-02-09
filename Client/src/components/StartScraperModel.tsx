@@ -1,10 +1,17 @@
-import { Button, Modal, TextInput, NumberInput, Stack } from "@mantine/core";
+import {
+  Button,
+  Modal,
+  TextInput,
+  NumberInput,
+  Stack,
+  Group,
+} from "@mantine/core";
 import { useState } from "react";
 
 export const StartScraperModel = () => {
   const [opened, setOpened] = useState(false);
+  const [urls, setUrls] = useState<string[]>([""]);
   const [formData, setFormData] = useState({
-    url: "",
     searchTerms: {
       title: "",
       price: "",
@@ -16,14 +23,49 @@ export const StartScraperModel = () => {
     },
   });
 
+  const handleAddUrl = () => {
+    setUrls([...urls, ""]);
+  };
+
+  const handleUrlChange = (index: number, value: string) => {
+    const newUrls = [...urls];
+    newUrls[index] = value;
+    setUrls(newUrls);
+  };
+
+  const handleRemoveUrl = (index: number) => {
+    if (urls.length > 1) {
+      const newUrls = urls.filter((_, i) => i !== index);
+      setUrls(newUrls);
+    }
+  };
+
   const handleSubmit = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/scrape/single", {
+      const endpoint =
+        urls.length > 1
+          ? "http://localhost:3000/api/scrape/bulk"
+          : "http://localhost:3000/api/scrape/single";
+
+      const body =
+        urls.length > 1
+          ? {
+              urls: urls.filter((url) => url.trim() !== ""),
+              searchTerms: formData.searchTerms,
+              options: formData.options,
+            }
+          : {
+              url: urls[0],
+              searchTerms: formData.searchTerms,
+              options: formData.options,
+            };
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(body),
       });
 
       if (response.ok) {
@@ -50,15 +92,37 @@ export const StartScraperModel = () => {
         title="Start New Scraping Job"
         size="lg"
       >
-        <Stack>
-          <TextInput
-            label="URL to Scrape"
-            placeholder="https://www.example.com"
-            value={formData.url}
-            onChange={(e) =>
-              setFormData({ ...formData, url: e.currentTarget.value })
-            }
-          />
+        <Stack spacing="md">
+          {urls.map((url, index) => (
+            <Group key={index} grow>
+              <TextInput
+                label={index === 0 ? "URL to Scrape" : "Additional URL"}
+                placeholder="https://www.example.com"
+                value={url}
+                onChange={(e) => handleUrlChange(index, e.currentTarget.value)}
+                style={{ flex: 1 }}
+              />
+              {urls.length > 1 && (
+                <Button
+                  color="red"
+                  variant="subtle"
+                  onClick={() => handleRemoveUrl(index)}
+                  style={{ marginTop: 24 }}
+                >
+                  Remove
+                </Button>
+              )}
+            </Group>
+          ))}
+
+          <Button
+            variant="outline"
+            color="blue"
+            onClick={handleAddUrl}
+            fullWidth
+          >
+            Add More URLs
+          </Button>
 
           <TextInput
             label="Search Title"
@@ -105,7 +169,7 @@ export const StartScraperModel = () => {
             }
           />
 
-          <p className="font-light">These are the default Settings</p>
+          <p className="text-sm text-gray-500">Advanced Settings</p>
 
           <NumberInput
             label="Max Pages (Optional)"
@@ -134,8 +198,13 @@ export const StartScraperModel = () => {
             }
           />
 
-          <Button onClick={handleSubmit} fullWidth color="blue">
-            Start Scraping
+          <Button
+            onClick={handleSubmit}
+            fullWidth
+            color="blue"
+            disabled={urls.every((url) => url.trim() === "")}
+          >
+            Start Scraping {urls.length > 1 ? `(${urls.length} URLs)` : ""}
           </Button>
         </Stack>
       </Modal>
