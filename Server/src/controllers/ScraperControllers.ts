@@ -23,18 +23,18 @@ export class ScraperControllers {
    *               url:
    *                 type: string
    *                 example: "https://www.newegg.com/p/pl?d=iphone"
-   *               item:
-   *                 type: string
-   *                 example: "product"
-   *               selectors:
+   *               searchTerms:
    *                 type: object
    *                 properties:
    *                   title:
    *                     type: string
-   *                     example: "span.item-open-box-italic"
+   *                     example: "iPhone"
    *                   price:
    *                     type: string
-   *                     example: "span.price-current-label"
+   *                     example: "999"
+   *                   description:
+   *                     type: string
+   *                     example: "Pro Max"
    *               options:
    *                 type: object
    *                 properties:
@@ -44,38 +44,27 @@ export class ScraperControllers {
    *                   waitTime:
    *                     type: number
    *                     example: 1000
-   *     responses:
-   *       202:
-   *         description: Scraping job queued
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 message:
-   *                   type: string
-   *                 jobId:
-   *                   type: string
-   *       400:
-   *         description: Bad request
-   *       500:
-   *         description: Internal server error
    */
   async scrapeWebsite(req: Request, res: Response) {
     try {
-      const { url, item, selectors, options } = req.body;
+      const { url, searchTerms, options } = req.body;
 
-      if (!url || !item || !selectors) {
+      if (!url || !searchTerms) {
         return res
           .status(400)
-          .json({ error: "The request is missing something" });
+          .json({ error: "URL and search terms are required" });
       }
 
-      // Add job to queue
+      // Log the incoming request
+      console.log("Scraping request:", {
+        url,
+        searchTerms,
+        options,
+      });
+
       const job = await scrapeQueue.add("scrape", {
         url,
-        item,
-        selectors,
+        searchTerms,
         options,
       });
 
@@ -115,11 +104,21 @@ export class ScraperControllers {
    *               type: object
    *               properties:
    *                 result:
-   *                   type: object
-   *       400:
-   *         description: Bad request
-   *       500:
-   *         description: Internal server error
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       title:
+   *                         type: string
+   *                       price:
+   *                         type: string
+   *                       description:
+   *                         type: string
+   *                       source_url:
+   *                         type: string
+   *                       scraped_at:
+   *                         type: string
+   *                         format: date-time
    */
   async getResults(req: Request, res: Response) {
     try {
@@ -219,19 +218,22 @@ export class ScraperControllers {
    *                 type: array
    *                 items:
    *                   type: string
-   *                 example: ["https://example.com/page1", "https://example.com/page2"]
-   *               item:
-   *                 type: string
-   *                 example: "product"
-   *               selectors:
+   *                 example: [
+   *                   "https://www.newegg.com/p/pl?d=iphone",
+   *                   "https://www.newegg.com/p/pl?d=iphone&page=2"
+   *                 ]
+   *               searchTerms:
    *                 type: object
    *                 properties:
    *                   title:
    *                     type: string
-   *                     example: "h1.product-title"
+   *                     example: "iPhone"
    *                   price:
    *                     type: string
-   *                     example: "span.price"
+   *                     example: "999"
+   *                   description:
+   *                     type: string
+   *                     example: "Pro Max"
    *               options:
    *                 type: object
    *                 properties:
@@ -241,42 +243,23 @@ export class ScraperControllers {
    *                   waitTime:
    *                     type: number
    *                     example: 1000
-   *     responses:
-   *       202:
-   *         description: Bulk scraping jobs queued
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 message:
-   *                   type: string
-   *                 jobIds:
-   *                   type: array
-   *                   items:
-   *                     type: string
-   *       400:
-   *         description: Bad request
-   *       500:
-   *         description: Internal server error
    */
+
   async scrapeBulkWebsites(req: Request, res: Response) {
     try {
-      const { urls, item, selectors, options } = req.body;
+      const { urls, searchTerms, options } = req.body;
 
-      if (!urls || !item || !selectors) {
+      if (!urls || !searchTerms) {
         return res
           .status(400)
-          .json({ error: "The request is missing something" });
+          .json({ error: "URLs and search terms are required" });
       }
 
-      // Add multiple jobs to queue
       const jobs = await Promise.all(
         urls.map((url: string) =>
           scrapeQueue.add("bulk-scrape", {
             url,
-            item,
-            selectors,
+            searchTerms,
             options,
           })
         )
