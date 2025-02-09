@@ -353,4 +353,26 @@ export class ScraperControllers {
       return res.status(500).json({ error: error.message });
     }
   }
+
+  // This controller is used primarily to fetch all the data from the database based on the date
+  // This is used to display the data on the frontend
+  async fetchAllDataToday(req: Request, res: Response) {
+    try {
+      const { date } = req.body;
+
+      if (!date) {
+        return res.status(400).json({ error: "Date is missing" });
+      }
+
+      const result = await pool.query(
+        `SELECT * FROM scraped_data WHERE scraped_at = $1`,
+        [date]
+      );
+
+      return res.status(200).json({ result: result });
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
 }

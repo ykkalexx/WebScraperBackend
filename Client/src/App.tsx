@@ -3,12 +3,14 @@ import { StartScraperModel } from "./components/StartScraperModel";
 
 function App() {
   return (
-    <div className="flex flex-col gap-5  w-full h-full justify-center items-center">
-      <h1 className="text-3xl font-semibold mb-10 mt-10 text-gray-00">
+    <div className="flex flex-col items-center justify-center w-full h-full gap-5">
+      <h1 className="mt-10 mb-10 text-3xl font-semibold text-gray-00">
         Website Scrapper
       </h1>
       <StartScraperModel />
-      <ScraperWebsite />
+      <div className="w-[1400px] h-[800px] gap-5 overflow-x-scroll">
+        <ScraperWebsite />
+      </div>
     </div>
   );
 }
