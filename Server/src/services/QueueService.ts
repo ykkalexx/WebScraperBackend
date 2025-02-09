@@ -16,11 +16,10 @@ new Worker(
   "scraping",
   async (job) => {
     console.log("Job started");
-    const { url, item, selectors, options } = job.data;
+    const { url, searchTerms, options } = job.data;
     const result = await playwrightService.launchScrapper(
       url,
-      item,
-      selectors,
+      searchTerms,
       options
     );
     console.log("hit2");
@@ -32,7 +31,7 @@ new Worker(
         [
           job.id,
           url,
-          JSON.stringify(selectors),
+          JSON.stringify(searchTerms),
           result.success ? "completed" : "failed",
           JSON.stringify(result),
         ]

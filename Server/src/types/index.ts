@@ -21,3 +21,9 @@ export interface Proxy {
   anonymity?: string;
   https?: boolean;
 }
+
+export interface AutoScrapeResult {
+  selector: string;
+  confidence: number;
+  value: string | null;
+}
