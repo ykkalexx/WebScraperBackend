@@ -7,8 +7,17 @@ import {
   Group,
 } from "@mantine/core";
 import { useState } from "react";
+import { ScrapedProduct } from "../types";
 
-export const StartScraperModel = () => {
+interface StartScraperModelProps {
+  onScrapeComplete: (data: ScrapedProduct[]) => void;
+  setLoading: (loading: boolean) => void;
+}
+
+export const StartScraperModel: React.FC<StartScraperModelProps> = ({
+  onScrapeComplete,
+  setLoading,
+}) => {
   const [opened, setOpened] = useState(false);
   const [urls, setUrls] = useState<string[]>([""]);
   const [formData, setFormData] = useState({
@@ -42,6 +51,7 @@ export const StartScraperModel = () => {
 
   const handleSubmit = async () => {
     try {
+      setLoading(true);
       const endpoint =
         urls.length > 1
           ? "http://localhost:3000/api/scrape/bulk"
@@ -71,12 +81,31 @@ export const StartScraperModel = () => {
       if (response.ok) {
         const data = await response.json();
         console.log("Scraping job started:", data);
+
+        // Poll for results
+        const resultResponse = await fetch(`http://localhost:3000/api/data`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url: urls[0] }),
+        });
+
+        if (resultResponse.ok) {
+          const resultData = await resultResponse.json();
+          if (resultData.result?.rows) {
+            onScrapeComplete(resultData.result.rows);
+          }
+        }
+
         setOpened(false);
       } else {
         console.error("Failed to start scraping job");
       }
     } catch (error) {
       console.error("Error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
