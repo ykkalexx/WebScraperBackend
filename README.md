@@ -35,7 +35,7 @@ A robust Node.js application built with TypeScript that provides an API for scra
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/web-scraper.git
+   git clone https://github.com/ykkalexx/WebScraperBackend.git
    cd web-scraper
    ```
 

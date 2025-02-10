@@ -15,4 +15,5 @@ router.post("/scrape/bulk", scraper.scrapeBulkWebsites);
 router.get("/scrape/status", scraper.fetchStatus);
 router.post("/scrape/seo", scraper.scrapeWebsiteSEO);
 router.post("/data", validateRequest(seoSchema), scraper.getResults);
+router.get("/fetch-today", scraper.fetchAllDataToday);
 export default router;
