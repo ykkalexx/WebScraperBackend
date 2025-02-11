@@ -1,0 +1,27 @@
+{
+  "name": "webscraper",
+  "private": true,
+  "workspaces": [
+    "Client",
+    "Server"
+  ],
+  "scripts": {
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "Client/**/*.{ts,tsx}": [
+      "cd Client && eslint --fix",
+      "cd Client && prettier --write"
+    ],
+    "Server/**/*.{ts}": [
+      "cd Server && eslint --fix",
+      "cd Server && prettier --write"
+    ],
+    "**/*.{css,scss,json,md}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
