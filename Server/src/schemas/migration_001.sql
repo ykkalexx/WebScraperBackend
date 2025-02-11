@@ -10,12 +10,13 @@ CREATE TABLE scraped_data (
     description TEXT,                  -- Description of the scraped item
     results JSONB NOT NULL,            -- Full scraped results (as JSON)
     scraped_at TIMESTAMP DEFAULT NOW() -- Timestamp of when the data was scraped
+    job_id TEXT NOT NULL UNIQUE,      -- Unique job ID (e.g., "job19")
 );
 
 -- Table to track scraping jobs
 CREATE TABLE scraping_jobs (
     id SERIAL PRIMARY KEY,
-    job_id TEXT NOT NULL UNIQUE,       -- Unique job ID (e.g., "single-123456789" or "bulk-123456789")
+    job_id TEXT NOT NULL UNIQUE,       -- Unique job ID (e.g., "job19")
     source_url TEXT NOT NULL,          -- URL(s) being scraped (for bulk, this can be a JSON array)
     selectors JSONB NOT NULL,          -- Selectors used for scraping (stored as JSON)
     status TEXT NOT NULL DEFAULT 'pending', -- Status of the job: "pending", "completed", "failed"
@@ -33,3 +34,7 @@ CREATE TABLE scraping_cache (
     expires_at TIMESTAMP               -- Timestamp of when the cache expires
 );
 
+-- indexes for better query performance
+CREATE INDEX idx_scraped_data_job_id ON scraped_data(job_id);
+CREATE INDEX idx_scraped_data_source_url ON scraped_data(source_url);
+CREATE INDEX idx_scraped_data_scraped_at ON scraped_data(scraped_at);
