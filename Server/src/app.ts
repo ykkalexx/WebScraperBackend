@@ -5,10 +5,23 @@ import pool from "./config/database";
 import swaggerSetup from "./config/swagger";
 import WebSocketService from "./services/WebsocketsService";
 import { createServer } from "http";
+import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const httpServer = createServer(app);
+
+// Configure CORS with specific options
+const corsOptions = {
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+// Apply CORS with options
+app.use(cors(corsOptions));
 
 // init websocket
 export const websocketService = new WebSocketService(httpServer);

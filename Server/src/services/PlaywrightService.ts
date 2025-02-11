@@ -443,6 +443,7 @@ export class PlaywrightService {
       try {
         // Save all found products
         const products = result.data.map((item) => ({
+          jobId: jobId,
           source_url: url,
           title: item.title,
           price: item.price,
@@ -453,14 +454,15 @@ export class PlaywrightService {
         for (const product of products) {
           await pool.query(
             `INSERT INTO scraped_data 
-             (source_url, title, price, description, results) 
-             VALUES ($1, $2, $3, $4, $5)`,
+             (source_url, title, price, description, results, job_id) 
+             VALUES ($1, $2, $3, $4, $5, $6)`,
             [
               product.source_url,
               product.title,
               product.price,
               product.description,
               product.results,
+              product.jobId,
             ]
           );
         }

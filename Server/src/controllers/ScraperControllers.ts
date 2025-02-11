@@ -353,4 +353,22 @@ export class ScraperControllers {
       return res.status(500).json({ error: error.message });
     }
   }
+
+  // This controller is used primarily to fetch all the data from the database
+  // This is used to display the data on the frontend
+  async fetchAllData(req: Request, res: Response) {
+    try {
+      const result = await pool.query(`SELECT * FROM scraped_data`);
+
+      // if there are no scraps for the date given
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "Data has not been found" });
+      }
+
+      return res.status(200).json({ result: result.rows });
+    } catch (error: any) {
+      console.error(error);
+      return res.status(500).json({ error: error.message });
+    }
+  }
 }

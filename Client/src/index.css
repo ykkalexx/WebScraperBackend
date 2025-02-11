@@ -8,3 +8,10 @@ body {
   font-family: "Poppins", sans-serif;
   background-color: #f7f8fb;
 }
+
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+  .backdrop-blur-lg {
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+}
