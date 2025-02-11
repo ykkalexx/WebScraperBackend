@@ -82,8 +82,8 @@ export const StartScraperModel: React.FC<StartScraperModelProps> = ({
         const data = await response.json();
         console.log("Scraping job started:", data);
 
-        // Poll for results
-        const resultResponse = await fetch(`http://localhost:3000/api/data`, {
+        // Wait for initial results
+        const resultResponse = await fetch("http://localhost:3000/api/data", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -94,18 +94,14 @@ export const StartScraperModel: React.FC<StartScraperModelProps> = ({
         if (resultResponse.ok) {
           const resultData = await resultResponse.json();
           if (resultData.result?.rows) {
-            onScrapeComplete(resultData.result.rows);
+            onScrapeComplete(resultData.result.rows, data.jobId);
           }
         }
 
         setOpened(false);
-      } else {
-        console.error("Failed to start scraping job");
       }
     } catch (error) {
       console.error("Error:", error);
-    } finally {
-      setLoading(false);
     }
   };
 

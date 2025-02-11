@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { io, Socket } from "socket.io-client";
 import { ScraperWebsite } from "./components/ScraperWebsite";
 import { StartScraperModel } from "./components/StartScraperModel";
 import { ScrapedProduct } from "./types";
@@ -6,18 +7,47 @@ import { ScrapedProduct } from "./types";
 function App() {
   const [currentJobData, setCurrentJobData] = useState<ScrapedProduct[]>([]);
   const [loading, setLoading] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
 
-  const handleNewScrapeJob = (jobData: ScrapedProduct[]) => {
-    setCurrentJobData(jobData);
+  useEffect(() => {
+    // Create a single socket connection
+    socketRef.current = io("http://localhost:3000");
+
+    socketRef.current.on("connect", () => {
+      console.log("Connected to WebSocket server");
+    });
+
+    socketRef.current.on("jobComplete", (data) => {
+      console.log("Job completed:", data);
+      if (data.result?.data) {
+        setCurrentJobData(
+          data.result.data.filter((item: ScrapedProduct) => item.title !== null)
+        );
+      }
+      setLoading(false);
+    });
+
+    socketRef.current.on("jobFailed", (error) => {
+      console.error("Job failed:", error);
+      setLoading(false);
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  const handleNewScrapeJob = (jobData: ScrapedProduct[], jobId: string) => {
+    // Set initial data
+    setCurrentJobData(jobData.filter((item) => item.title !== null));
+
+    // Subscribe to job updates using existing socket connection
+    if (socketRef.current) {
+      socketRef.current.emit("subscribe", jobId);
+    }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-xl text-gray-600">Loading results...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -37,7 +67,11 @@ function App() {
             setLoading={setLoading}
           />
 
-          {currentJobData.length > 0 ? (
+          {loading ? (
+            <div className="py-12 text-center text-gray-500">
+              Scraping in progress...
+            </div>
+          ) : currentJobData.length > 0 ? (
             <div className="w-full max-w-6xl">
               <ScraperWebsite data={currentJobData} />
             </div>
